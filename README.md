@@ -6,3 +6,5 @@ Simple injector and dll for injecting into mcd2. not much has been made because 
 #### Use at your own risk.
 
 If we ever end up getting some sort of approval by mojang or maybe signed mods or something i'd love to return to this, but for now it ends here. 
+
+or maybe we could just get an offline mode so we can play with the game till our hearts content.
