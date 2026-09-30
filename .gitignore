@@ -1,0 +1,44 @@
+# visual studio
+.vs/
+*.user
+*.aps
+*.suo
+*.VC.db
+*.VC.opendb
+ipch/
+
+# build output
+x64/
+x86/
+Win32/
+Debug/
+Release/
+[Bb]in/
+[Oo]bj/
+
+*.exe
+*.dll
+*.lib
+*.exp
+*.obj
+*.pch
+*.pdb
+*.ilk
+*.idb
+*.iobj
+*.ipdb
+*.tlog
+*.lastbuildstate
+*.recipe
+*.log
+*.tmp
+tools/exit-log.csv
+
+# game dumps, too big + regenerated per build
+*.usmap
+*_SDK.h
+Dumper-7/
+CppSDK/
+Dumpspace/
+
+Thumbs.db
