@@ -3,38 +3,53 @@
   <ItemGroup>
     <Filter Include="Source Files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="Core">
+      <UniqueIdentifier>{2B6E9C1D-7A44-4F0E-9C21-5D3A8E7F1B01}</UniqueIdentifier>
     </Filter>
-    <Filter Include="MinHook">
+    <Filter Include="Engine">
+      <UniqueIdentifier>{6C1F4E2A-93B7-4D58-8A0E-1F7B2C9D4E02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External">
       <UniqueIdentifier>{8D1C2F6A-3B4E-4C5D-9A7B-6E2F1D0C9B8A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External\MinHook">
+      <UniqueIdentifier>{A3E5D7C9-1B2F-4E6A-8C0D-9F1E2A3B4C03}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h">
+    <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h">
+    <ClInclude Include="framework.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Spicewood.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Memory.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Core\Console.h">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Offsets.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Core\Memory.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Strings.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Objects.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Offsets.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Unreal.h">
+      <Filter>Engine</Filter>
     </ClInclude>
     <ClInclude Include="external\minhook\include\MinHook.h">
-      <Filter>MinHook</Filter>
+      <Filter>External\MinHook</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -47,20 +62,29 @@
     <ClCompile Include="Spicewood.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Console.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Strings.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Objects.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
     <ClCompile Include="external\minhook\src\buffer.c">
-      <Filter>MinHook</Filter>
+      <Filter>External\MinHook</Filter>
     </ClCompile>
     <ClCompile Include="external\minhook\src\hook.c">
-      <Filter>MinHook</Filter>
+      <Filter>External\MinHook</Filter>
     </ClCompile>
     <ClCompile Include="external\minhook\src\trampoline.c">
-      <Filter>MinHook</Filter>
+      <Filter>External\MinHook</Filter>
     </ClCompile>
     <ClCompile Include="external\minhook\src\hde\hde32.c">
-      <Filter>MinHook</Filter>
+      <Filter>External\MinHook</Filter>
     </ClCompile>
     <ClCompile Include="external\minhook\src\hde\hde64.c">
-      <Filter>MinHook</Filter>
+      <Filter>External\MinHook</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

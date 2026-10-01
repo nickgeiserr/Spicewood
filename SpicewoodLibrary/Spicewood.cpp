@@ -1,98 +1,55 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "Spicewood.h"
-#include <cstdio>
-#include <iostream>
-#include "Offsets.h"
-#include "Memory.h"
-#include "Unreal.h"
-
-void CreateConsole() {
-	if (AllocConsole()) {
-		FILE* fDummy;
-
-		freopen_s(&fDummy, "CONOUT$", "w", stdout);
-		freopen_s(&fDummy, "CONIN$", "r", stdin);
-		freopen_s(&fDummy, "CONOUT$", "w", stderr);
-		SetConsoleTitleA("Spicewood - Library");
-		
-		HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-		SetConsoleMode(consoleHandle, ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-	}
-
-	std::cout << "--- Spicewood Console ---" << std::endl;
-}
-
-void Cleanup() {
-	FreeConsole();
-}
-
-uintptr_t TObjectAddress(uintptr_t base_address) {
-	return base_address + TOBJECT_ARRAY;
-}
-
-int32_t gobjectsNum(uintptr_t tObjectArray) {
-	int32_t numElements = Read<int32_t>((void*)tObjectArray, 0x14);
-	return numElements;
-}
-
-void PrintAllObjectsToFile(uintptr_t tObjectAddress) {
-
-	std::cout << "Printing." << std::endl;
-	uint32_t correct = 0;
-	uint32_t wrong = 0;
-
-	void* tocPointer = Read<void*>((void*)tObjectAddress, 0x00);
-	if (tocPointer == nullptr) {
-		std::cout << "Failed to grab table of contents. " << std::endl;
-		return;
-	}
-	uint32_t numObjects = gobjectsNum(tObjectAddress);
-	for (int i = 0; i < numObjects; i++) {
-		int chunk = i / PAGE_MAX;
-		int index = i % PAGE_MAX;
-
-		void* chunkPtr = Read<void*>((void*)tocPointer, chunk * 8);
-		if (chunkPtr == nullptr) {
-			std::cout << "Failed to grab chunk pointer. Skipping";
-			continue;
-		}
-
-		void* objectPtr = Read<void*>(chunkPtr, index * 24);
-		if (objectPtr == nullptr) {
-			std::cout << "Failed to grab object pointer. Skipping";
-			continue;
-		}
-
-		int32_t trueIndex = Read<int32_t>(objectPtr, 0x0c);
-		if (trueIndex == i) {
-			correct += 1;
-		}
-		else {
-			wrong += 1;
-		}
-
-	}
-
-	std::cout << std::endl << "There was " << correct << " correct numbers and " << wrong << " wrong numbers. Nice? maybe.";
-}
+#include <format>
+#include "Core/Console.h"
+#include "Engine/Objects.h"
 
 DWORD WINAPI MainThread(LPVOID param) {
 	CreateConsole();
+	DrawKeybinds({ {"O", "Object count"}, {"L", "Check objects"}, { "K", "FindObject" }, { "J", "FindObjectsByClass" }, { "P", "Unload" }});
+
+	uintptr_t appendAddress = (uintptr_t)GetModuleHandle(NULL) + 0x012E5160;
+	AppendString append = (AppendString)appendAddress;
+
+	wchar_t buffer[1024];
+	FString result{ buffer, 0 , 1024 };
+
 	uintptr_t processBaseAddress = (uintptr_t)GetModuleHandle(NULL);
+	Print(Startup, "Spicewood loaded");
 
 	while (true) {
 		if ((GetAsyncKeyState('P') & 0x8000) != 0) {
-			std::cout << "Exiting Spicewood" << std::endl;
-			Cleanup();
+			Print(Info, "Unloading Spicewood");
+			CleanupConsole();
 			FreeLibraryAndExitThread((HMODULE)param, 0);
 		}
 
 		if ((GetAsyncKeyState('O') & 0x8000) != 0) {
-			std::cout << gobjectsNum(TObjectAddress(processBaseAddress));
+			Print(Info, std::format("GObjects: {}", gObjectsNum(TObjectAddress(processBaseAddress))));
 		}
 
 		if ((GetAsyncKeyState('L') & 0x8000) != 0) {
-			PrintAllObjectsToFile(TObjectAddress(processBaseAddress));
+			PrintAllObjects(TObjectAddress(processBaseAddress));
+		}
+
+		if ((GetAsyncKeyState('K') & 0x8000) != 0) {
+			Print(PrintType::Debug, std::format("{:#x}",FindObject("Class /Script/SpicewoodGAS.ATR_RangedAttack")));
+		}
+
+		if ((GetAsyncKeyState('J') & 0x8000) != 0) {
+			uintptr_t classPtr = FindObject("Class /Script/SpicewoodGAS.ATR_RangedAttack");
+			if (!classPtr) {
+				Print(PrintType::Error, "Failed to find the class pointer.");
+			}
+			else {
+				std::vector<uintptr_t> objects = FindObjectsByClass(classPtr);
+
+				Print(PrintType::Debug, std::to_string(objects.size()));
+
+				for (uintptr_t object : objects) {
+					Print(PrintType::Debug, std::format("{:#x}", object) + " | " + GetName(append, &result, object+0x18));
+				}
+			}
 		}
 
 		Sleep(150);
