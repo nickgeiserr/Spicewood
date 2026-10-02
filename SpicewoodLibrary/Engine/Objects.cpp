@@ -6,37 +6,48 @@
 #include "Core/Strings.h"
 #include "Engine/Offsets.h"
 
-uintptr_t TObjectAddress(uintptr_t base_address) {
-	return base_address + TOBJECT_ARRAY;
+static uintptr_t moduleBase = 0;
+static uintptr_t objectArray = 0;
+static AppendString appendString = nullptr;
+
+void InitObjects(uintptr_t base) {
+	moduleBase = base;
+	objectArray = base + TOBJECT_ARRAY;
+	appendString = (AppendString)(base + APPEND_STRING);
 }
 
-int32_t gObjectsNum(uintptr_t tObjectArray) {
-	int32_t numElements = Read<int32_t>(tObjectArray, 0x14);
+int32_t gObjectsNum() {
+	if (!objectArray)
+		return 0;
+
+	int32_t numElements = Read<int32_t>(objectArray, 0x14);
 	return numElements;
 }
 
-std::string GetName(AppendString append, FString* string, uintptr_t nameAddress) {
-	append((void*)nameAddress, *string);
+std::string GetName(uintptr_t nameAddress) {
+	if (!appendString)
+		return "";
 
-	std::string name = ToUtf8(string->data);
-	string->num = 0;
-	return name;
+	wchar_t buffer[1024];
+	FString string{ buffer, 0, 1024 };
+	appendString((void*)nameAddress, string);
+
+	return ToUtf8(string.data);
 }
 
 std::vector<uintptr_t> FindObjectsByClass(uintptr_t classPtr) {
-	uintptr_t tObjectAddress = TObjectAddress((uintptr_t)GetModuleHandle(NULL));
-	if (!tObjectAddress) {
+	if (!objectArray) {
 		Print(Error, "Failed to grab object table address.");
 		return {};
 	}
 
-	uintptr_t tocPointer = Read<uintptr_t>(tObjectAddress, 0x00);
+	uintptr_t tocPointer = Read<uintptr_t>(objectArray, 0x00);
 	if (!tocPointer) {
 		Print(Error, "Failed to grab table of contents");
 		return {};
 	}
 
-	uint32_t numObjects = gObjectsNum(tObjectAddress);
+	uint32_t numObjects = gObjectsNum();
 
 	std::vector<uintptr_t> pointer_table = {};
 
@@ -56,7 +67,7 @@ std::vector<uintptr_t> FindObjectsByClass(uintptr_t classPtr) {
 		}
 
 		uintptr_t classAddress = Read<uintptr_t>(objectPtr, 0x10);
-	
+
 		if (classPtr == classAddress) {
 			pointer_table.push_back(objectPtr);
 		}
@@ -67,23 +78,18 @@ std::vector<uintptr_t> FindObjectsByClass(uintptr_t classPtr) {
 }
 
 uintptr_t FindObject(const std::string& full_name) {
-	uintptr_t tObjectAddress = TObjectAddress((uintptr_t)GetModuleHandle(NULL));
-	if (!tObjectAddress) {
+	if (!objectArray) {
 		Print(Error, "Failed to grab object table address.");
 		return 0;
 	}
 
-	uintptr_t tocPointer = Read<uintptr_t>(tObjectAddress, 0x00);
+	uintptr_t tocPointer = Read<uintptr_t>(objectArray, 0x00);
 	if (!tocPointer) {
 		Print(Error, "Failed to grab table of contents");
 		return 0;
 	}
 
-	uintptr_t appendAddress = (uintptr_t)GetModuleHandle(NULL) + 0x012E5160;
-
-	AppendString append = (AppendString)appendAddress;
-
-	uint32_t numObjects = gObjectsNum(tObjectAddress);
+	uint32_t numObjects = gObjectsNum();
 
 	size_t pos = full_name.rfind('.');
 	std::string short_name;
@@ -113,10 +119,7 @@ uintptr_t FindObject(const std::string& full_name) {
 		uintptr_t initialNameAddress = objectPtr + 0x18;
 		uintptr_t classAddress = Read<uintptr_t>(objectPtr, 0x10);
 
-		wchar_t buffer[1024];
-		FString result{ buffer, 0 , 1024 };
-
-		std::string constructedFullName = GetName(append, &result, initialNameAddress);
+		std::string constructedFullName = GetName(initialNameAddress);
 
 		if (constructedFullName != short_name) {
 			continue;
@@ -128,7 +131,7 @@ uintptr_t FindObject(const std::string& full_name) {
 			uintptr_t outer = Read<uintptr_t>(nextOuterAddress, 0x00);
 			if (outer) {
 				uintptr_t nameAddress = outer + 0x18;
-				constructedFullName = GetName(append, &result, nameAddress) + "." + constructedFullName;
+				constructedFullName = GetName(nameAddress) + "." + constructedFullName;
 				nextOuterAddress = nameAddress + 0x08;
 				continue;
 			}
@@ -138,7 +141,7 @@ uintptr_t FindObject(const std::string& full_name) {
 		}
 
 		uintptr_t classNameAddress = classAddress + 0x18;
-		std::string class_name = GetName(append, &result, classNameAddress);
+		std::string class_name = GetName(classNameAddress);
 
 		constructedFullName = class_name + " " + constructedFullName;
 
@@ -150,24 +153,25 @@ uintptr_t FindObject(const std::string& full_name) {
 	return 0;
 }
 
-void PrintAllObjects(uintptr_t tObjectAddress) {
+void PrintAllObjects() {
 
 	Print(Info, "Checking GObjects...");
 	uint32_t correct = 0;
 	uint32_t wrong = 0;
 	uint32_t empty = 0;
 
-	uintptr_t tocPointer = Read<uintptr_t>(tObjectAddress, 0x00);
+	if (!objectArray) {
+		Print(Error, "Failed to grab object table address.");
+		return;
+	}
+
+	uintptr_t tocPointer = Read<uintptr_t>(objectArray, 0x00);
 	if (!tocPointer) {
 		Print(Error, "Failed to grab table of contents");
 		return;
 	}
 
-	uintptr_t appendAddress = (uintptr_t)GetModuleHandle(NULL) + 0x012E5160;
-
-	AppendString append = (AppendString)appendAddress;
-
-	uint32_t numObjects = gObjectsNum(tObjectAddress);
+	uint32_t numObjects = gObjectsNum();
 	for (int i = 0; i < 25; i++) {
 		int chunk = i / PAGE_MAX;
 		int index = i % PAGE_MAX;
@@ -187,10 +191,7 @@ void PrintAllObjects(uintptr_t tObjectAddress) {
 		uintptr_t initialNameAddress = objectPtr + 0x18;
 		uintptr_t classAddress = Read<uintptr_t>(objectPtr, 0x10);
 
-		wchar_t buffer[1024];
-		FString result{ buffer, 0 , 1024 };
-
-		std::string full_name = GetName(append, &result, initialNameAddress);
+		std::string full_name = GetName(initialNameAddress);
 
 		bool moreOuter = true;
 		uintptr_t nextOuterAddress = initialNameAddress + 0x08;
@@ -198,7 +199,7 @@ void PrintAllObjects(uintptr_t tObjectAddress) {
 			uintptr_t outer = Read<uintptr_t>(nextOuterAddress, 0x00);
 			if (outer) {
 				uintptr_t nameAddress = outer + 0x18;
-				full_name = GetName(append, &result, nameAddress) + "." + full_name;
+				full_name = GetName(nameAddress) + "." + full_name;
 				nextOuterAddress = nameAddress + 0x08;
 				continue;
 			}
@@ -207,10 +208,10 @@ void PrintAllObjects(uintptr_t tObjectAddress) {
 			break;
 		}
 
-		
+
 
 		uintptr_t classNameAddress = classAddress + 0x18;
-		std::string class_name = GetName(append, &result, classNameAddress);
+		std::string class_name = GetName(classNameAddress);
 
 		full_name = class_name + " " + full_name;
 

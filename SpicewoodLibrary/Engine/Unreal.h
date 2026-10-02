@@ -10,5 +10,10 @@ struct FString {
 };
 static_assert(sizeof(FString) == 0x10);
 
+// forward dec
+class UObject;
+class UFunction;
+
 
 using AppendString = void(*)(const void*, FString&);
+using ProcessEventFn = void(*)(UObject* object, UFunction* function, void* params);

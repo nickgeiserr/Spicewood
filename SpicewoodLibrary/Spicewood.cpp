@@ -3,33 +3,34 @@
 #include <format>
 #include "Core/Console.h"
 #include "Engine/Objects.h"
+#include "Hooks.h"
 
 DWORD WINAPI MainThread(LPVOID param) {
 	CreateConsole();
 	DrawKeybinds({ {"O", "Object count"}, {"L", "Check objects"}, { "K", "FindObject" }, { "J", "FindObjectsByClass" }, { "P", "Unload" }});
 
-	uintptr_t appendAddress = (uintptr_t)GetModuleHandle(NULL) + 0x012E5160;
-	AppendString append = (AppendString)appendAddress;
-
-	wchar_t buffer[1024];
-	FString result{ buffer, 0 , 1024 };
-
-	uintptr_t processBaseAddress = (uintptr_t)GetModuleHandle(NULL);
+	InitObjects((uintptr_t)GetModuleHandle(NULL));
 	Print(Startup, "Spicewood loaded");
+
+	int hooksFailed = H_Inititialize((uintptr_t)GetModuleHandle(NULL));
+	if (hooksFailed) {
+		Print(PrintType::Warning, "MinHook init failed. Hooks will not work.");
+	}
 
 	while (true) {
 		if ((GetAsyncKeyState('P') & 0x8000) != 0) {
 			Print(Info, "Unloading Spicewood");
+			H_Shutdown();
 			CleanupConsole();
 			FreeLibraryAndExitThread((HMODULE)param, 0);
 		}
 
 		if ((GetAsyncKeyState('O') & 0x8000) != 0) {
-			Print(Info, std::format("GObjects: {}", gObjectsNum(TObjectAddress(processBaseAddress))));
+			Print(Info, std::format("GObjects: {}", gObjectsNum()));
 		}
 
 		if ((GetAsyncKeyState('L') & 0x8000) != 0) {
-			PrintAllObjects(TObjectAddress(processBaseAddress));
+			PrintAllObjects();
 		}
 
 		if ((GetAsyncKeyState('K') & 0x8000) != 0) {
@@ -47,7 +48,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 				Print(PrintType::Debug, std::to_string(objects.size()));
 
 				for (uintptr_t object : objects) {
-					Print(PrintType::Debug, std::format("{:#x}", object) + " | " + GetName(append, &result, object+0x18));
+					Print(PrintType::Debug, std::format("{:#x}", object) + " | " + GetName(object + 0x18));
 				}
 			}
 		}
