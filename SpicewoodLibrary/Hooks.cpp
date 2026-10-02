@@ -15,9 +15,9 @@ int H_Inititialize(uintptr_t base) {
 
 	MH_STATUS hookStatus = MH_CreateHook(processEvent, &HandleProcessEvent, reinterpret_cast<LPVOID*>(&oProcessEvent));
 
-	if (hookStatus != MH_OK) {
-		Print(PrintType::Error, "Failed to hook ProcessEvent");
-	 	return 1;
+	 if (hookStatus != MH_OK) {
+	 	Print(PrintType::Error, "Failed to hook ProcessEvent");
+	  	return 1;
 	 }
 
 	Print(PrintType::Info, "ProcessEvent Hooked.");

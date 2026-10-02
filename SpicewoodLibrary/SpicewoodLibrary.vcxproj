@@ -159,6 +159,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Aegis.h" />
     <ClInclude Include="Hooks.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="framework.h" />
@@ -172,6 +173,7 @@
     <ClInclude Include="external\minhook\include\MinHook.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Aegis.cpp" />
     <ClCompile Include="Core\Console.cpp" />
     <ClCompile Include="Core\Strings.cpp" />
     <ClCompile Include="Engine\Objects.cpp" />

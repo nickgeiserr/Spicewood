@@ -3,19 +3,39 @@
 
 int main() {
 
+	bool try_inject_start = true;
+
 	LPCSTR dll = R"(C:\Solutions\Spicewood\SpicewoodLibrary\x64\Release\SpicewoodLibrary.dll)";
 
 	std::cout << "------- Spicewood Injector -------" << std::endl;
 
-	std::cout << "Attempting to find handle to Minecraft Dungeons II" << std::endl;
-	HWND windowHandle = FindWindowA("UnrealWindow", NULL);
+	HWND windowHandle = NULL;
 
-	if (windowHandle == NULL) {
-		std::cout << "Failed to find the game window. Is it running? Try Injecting Again" << std::endl;
-		return 0;
+	if (try_inject_start) {
+		while (true) {
+			std::cout << "Attempting to find handle to Minecraft Dungeons II" << std::endl;
+			HWND handle = FindWindowA("UnrealWindow", NULL);
+
+			if (handle == NULL) {
+				continue;
+			}
+
+			std::cout << "Window Handle found!" << std::endl;
+			windowHandle = handle;
+			break;
+		}
 	}
+	else {
+		std::cout << "Attempting to find handle to Minecraft Dungeons II" << std::endl;
+		windowHandle = FindWindowA("UnrealWindow", NULL);
 
-	std::cout << "Window Handle found!" << std::endl;
+		if (windowHandle == NULL) {
+			std::cout << "Failed to find the game window. Is it running? Try Injecting Again" << std::endl;
+			return 0;
+		}
+
+		std::cout << "Window Handle found!" << std::endl;
+	}
 
 
 	DWORD proc_id = 0;
