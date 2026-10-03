@@ -3,9 +3,13 @@
 
 int main() {
 
-	bool try_inject_start = true;
-
-	LPCSTR dll = R"(C:\Solutions\Spicewood\SpicewoodLibrary\x64\Release\SpicewoodLibrary.dll)";
+	bool try_inject_start = false;
+	bool dump_game = true;
+	LPCSTR dll = "";
+	if (dump_game)
+		 dll = R"(C:\Solutions\Spicewood\SpicewoodLibrary\x64\Release\dumper-7.dll)";
+	else
+		dll = R"(C:\Solutions\Spicewood\SpicewoodLibrary\x64\Release\SpicewoodLibrary.dll)";
 
 	std::cout << "------- Spicewood Injector -------" << std::endl;
 

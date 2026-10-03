@@ -68,10 +68,10 @@ DWORD WINAPI MainThread(LPVOID param) {
 	InitObjects((uintptr_t)GetModuleHandle(NULL));
 	Print(Startup, "Spicewood loaded");
 
-	int hooksFailed = H_Inititialize((uintptr_t)GetModuleHandle(NULL));
-	if (hooksFailed) {
-		Print(PrintType::Warning, "MinHook init failed. Hooks will not work.");
-	}
+	// int hooksFailed = H_Inititialize((uintptr_t)GetModuleHandle(NULL));
+	// if (hooksFailed) {
+	// 	Print(PrintType::Warning, "MinHook init failed. Hooks will not work.");
+	// }
 
 	LogAllProcessThreadsToFile();
 

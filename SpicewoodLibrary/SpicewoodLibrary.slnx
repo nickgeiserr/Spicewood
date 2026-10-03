@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="SpicewoodLibrary.vcxproj" />
+  <Project Path="SpicewoodLibrary.vcxproj" Id="477c8601-1410-4941-8b20-19feb658747d" />
 </Solution>

@@ -51,6 +51,8 @@
     <ClInclude Include="external\minhook\include\MinHook.h">
       <Filter>External\MinHook</Filter>
     </ClInclude>
+    <ClInclude Include="Aegis.h" />
+    <ClInclude Include="Hooks.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -86,5 +88,7 @@
     <ClCompile Include="external\minhook\src\hde\hde64.c">
       <Filter>External\MinHook</Filter>
     </ClCompile>
+    <ClCompile Include="Aegis.cpp" />
+    <ClCompile Include="Hooks.cpp" />
   </ItemGroup>
 </Project>
