@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 
-const uintptr_t TOBJECT_ARRAY = 0x0AEC7B30;
-const uintptr_t APPEND_STRING = 0x012E5160;
-const uintptr_t PROCESS_EVENT = 0x014FE240;
+constexpr uintptr_t TOBJECT_ARRAY = 0x0BF35A80;
+constexpr uintptr_t APPEND_STRING = 0x014656E0;
+constexpr uintptr_t PROCESS_EVENT = 0x01684BA0;
+constexpr uintptr_t GNames = 0x0BE19310;
+constexpr uintptr_t GWorld = 0x0BAC1810;

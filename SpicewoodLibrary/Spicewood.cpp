@@ -6,6 +6,7 @@
 #include "Hooks.h"
 #include <TlHelp32.h>
 #include <fstream>
+#include <Aegis.h>
 
 void LogAllProcessThreadsToFile() {
 	DWORD currentPID = GetCurrentProcessId();
@@ -62,41 +63,43 @@ void LogAllProcessThreadsToFile() {
 }
 
 DWORD WINAPI MainThread(LPVOID param) {
+	// UnlinkDllFromPEB((HINSTANCE)param);
 	CreateConsole();
-	DrawKeybinds({ {"O", "Object count"}, {"L", "Check objects"}, { "K", "FindObject" }, { "J", "FindObjectsByClass" }, { "P", "Unload" }});
+	DrawKeybinds({ {"F9", "Object count"}, {"F8", "Check objects"}, { "F7", "FindObject" }, { "F6", "FindObjectsByClass" }, { "F10", "Unload" }});
 
 	InitObjects((uintptr_t)GetModuleHandle(NULL));
 	Print(Startup, "Spicewood loaded");
 
-	// int hooksFailed = H_Inititialize((uintptr_t)GetModuleHandle(NULL));
-	// if (hooksFailed) {
+	//int hooksFailed = H_Inititialize(*(uintptr_t*)((uintptr_t)GetModuleHandle(NULL) + 0x0BAC1810));
+	//if (hooksFailed) {
 	// 	Print(PrintType::Warning, "MinHook init failed. Hooks will not work.");
 	// }
 
 	LogAllProcessThreadsToFile();
 
 	while (true) {
-		if ((GetAsyncKeyState('P') & 0x8000) != 0) {
+		if ((GetAsyncKeyState(VK_F10) & 0x8000) != 0) {
 			Print(Info, "Unloading Spicewood");
 			H_Shutdown();
 			CleanupConsole();
 			FreeLibraryAndExitThread((HMODULE)param, 0);
 		}
 
-		if ((GetAsyncKeyState('O') & 0x8000) != 0) {
+		if ((GetAsyncKeyState(VK_F9) & 0x8000) != 0) {
 			Print(Info, std::format("GObjects: {}", gObjectsNum()));
 		}
 
-		if ((GetAsyncKeyState('L') & 0x8000) != 0) {
+		if ((GetAsyncKeyState(VK_F8) & 0x8000) != 0) {
 			PrintAllObjects();
 		}
 
-		if ((GetAsyncKeyState('K') & 0x8000) != 0) {
+		if ((GetAsyncKeyState(VK_F7) & 0x8000) != 0) {
 			Print(PrintType::Debug, std::format("{:#x}",FindObject("Class /Script/SpicewoodGAS.ATR_RangedAttack")));
 		}
 
-		if ((GetAsyncKeyState('J') & 0x8000) != 0) {
-			uintptr_t classPtr = FindObject("Class /Script/SpicewoodGAS.ATR_RangedAttack");
+		if ((GetAsyncKeyState(VK_F6) & 0x8000) != 0) {
+			uintptr_t classPtr = FindObject("Class /Script/Engine.LocalPlayer");
+
 			if (!classPtr) {
 				Print(PrintType::Error, "Failed to find the class pointer.");
 			}
@@ -107,6 +110,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 
 				for (uintptr_t object : objects) {
 					Print(PrintType::Debug, std::format("{:#x}", object) + " | " + GetName(object + 0x18));
+					H_Inititialize(object);
 				}
 			}
 		}

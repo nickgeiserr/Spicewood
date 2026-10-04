@@ -1,51 +1,67 @@
 #include "pch.h"
 #include "Hooks.h"
 #include <unordered_set>
+#include <string>
+#include <sstream>
 
 static ProcessEventFn oProcessEvent = nullptr;
 static std::unordered_set<UFunction*> calledFunctions = {};
+static uintptr_t* allocatedShadowTable = nullptr;
 
-int H_Inititialize(uintptr_t base) {
-	if (MH_Initialize() != MH_OK) {
-		Print(PrintType::Error, "Failed to initialize MinHook");
+static int functionCaptureCount = 0;
+constexpr int MaxCaptures = 20;
+
+int H_Inititialize(uintptr_t targetInstance) {
+	if (!targetInstance) {
+		Print(PrintType::Error, "Target object instance is null for shadow hook.");
 		return 1;
 	}
 
-	LPVOID* processEvent = (LPVOID*)(base + PROCESS_EVENT);
+	uintptr_t** vmtArrayPointer = (uintptr_t**)targetInstance;
+	uintptr_t* originalVMT = *vmtArrayPointer;
 
-	MH_STATUS hookStatus = MH_CreateHook(processEvent, &HandleProcessEvent, reinterpret_cast<LPVOID*>(&oProcessEvent));
+	constexpr int TableSize = 150;
+	constexpr int ProcessEventIdx = 76;
 
-	 if (hookStatus != MH_OK) {
-	 	Print(PrintType::Error, "Failed to hook ProcessEvent");
-	  	return 1;
-	 }
+	allocatedShadowTable = new uintptr_t[TableSize];
+	memcpy(allocatedShadowTable, originalVMT, TableSize * sizeof(uintptr_t));
 
-	Print(PrintType::Info, "ProcessEvent Hooked.");
+	oProcessEvent = (ProcessEventFn)originalVMT[ProcessEventIdx];
+	allocatedShadowTable[ProcessEventIdx] = (uintptr_t)&HandleProcessEvent;
 
-	if (MH_EnableHook(MH_ALL_HOOKS) != MH_OK) {
-		Print(PrintType::Error, "Failed to enable hooks.");
+	DWORD oldProtect;
+	if (!VirtualProtect(vmtArrayPointer, sizeof(uintptr_t), PAGE_READWRITE, &oldProtect)) {
+		Print(PrintType::Error, "VirtualProtect failed on table pointer.");
 		return 1;
 	}
-	Print(PrintType::Info, "Hooks Enabled.");
-	
 
-	return MH_OK;
+	*vmtArrayPointer = allocatedShadowTable;
+
+	VirtualProtect(vmtArrayPointer, sizeof(uintptr_t), oldProtect, &oldProtect);
+
+	functionCaptureCount = 0;
+	Print(PrintType::Info, "ProcessEvent Shadow Hook initialized. Capturing first 20 calls...");
+	return 0;
 }
 
 void HandleProcessEvent(UObject* object, UFunction* function, void* params) {
-	if (calledFunctions.contains(function)) {
-		oProcessEvent(object, function, params);
-		return;
+	if (functionCaptureCount < MaxCaptures) {
+		functionCaptureCount++;
+
+		std::stringstream ss;
+		ss << "Intercepted Function Call [" << functionCaptureCount << "/" << MaxCaptures << "] | Function address: 0x" << std::hex << (uintptr_t)function;
+		Print(PrintType::Debug, ss.str());
 	}
 
-	Print(PrintType::Debug, "New Function Called: " + GetName((uintptr_t)function + 0x18));
-	calledFunctions.insert(function);
 	oProcessEvent(object, function, params);
 	return;
 }
 
 int H_Shutdown() {
-	MH_DisableHook(MH_ALL_HOOKS);
-	MH_Uninitialize();
+	if (allocatedShadowTable != nullptr) {
+		delete[] allocatedShadowTable;
+		allocatedShadowTable = nullptr;
+		Print(PrintType::Info, "Hooks uninitialized.");
+	}
 	return 1;
 }

@@ -1,0 +1,9 @@
+[WorkMyWayUp] Thread started successfully. Testing stealth pipeline.
+[WorkMyWayUp] Attached.
+[WorkMyWayUp] Image Base: 0x7ff7475a0000
+[WorkMyWayUp] Resolve Status:
+-> GWorld: 0x22f9406f5d0
+-> GObjects: 0x22f45735860
+-> GNames: 0x22f4789b000
+-> AppendString: 0x7ff748a056e0
+-> ProcessEvent: 0x7ff748c24ba0

@@ -4,12 +4,12 @@
 int main() {
 
 	bool try_inject_start = false;
-	bool dump_game = true;
+	bool dump_game = false;
 	LPCSTR dll = "";
 	if (dump_game)
-		 dll = R"(C:\Solutions\Spicewood\SpicewoodLibrary\x64\Release\dumper-7.dll)";
+		dll = R"(C:\Solutions\Spicewood\SpicewoodLibrary\x64\Release\dumper-7.dll)";
 	else
-		dll = R"(C:\Solutions\Spicewood\SpicewoodLibrary\x64\Release\SpicewoodLibrary.dll)";
+		dll = R"(C:\Solutions\Spicewood\SpicewoodLibrary\x64\Release\Spicewood.dll)";
 
 	std::cout << "------- Spicewood Injector -------" << std::endl;
 
@@ -79,8 +79,8 @@ int main() {
 
 	std::cout << "Found LoadLibraryA! " << std::endl;
 
-	HANDLE hRemoteLoad = CreateRemoteThread(handle, 0, 0, 
-		(LPTHREAD_START_ROUTINE)procAddress, 
+	HANDLE hRemoteLoad = CreateRemoteThread(handle, 0, 0,
+		(LPTHREAD_START_ROUTINE)procAddress,
 		allocDllPath, 0, 0);
 
 	if (hRemoteLoad == nullptr) {
@@ -104,13 +104,6 @@ int main() {
 	std::cout << "Bye bye! Freeing memory now";
 
 	if (allocDllPath != nullptr) {
-		SIZE_T sizeToDecommit = strlen(dll) + 1;
-		if (sizeToDecommit > 0) {
-			if (!VirtualFreeEx(handle, allocDllPath, sizeToDecommit, MEM_DECOMMIT)) {
-				DWORD err = GetLastError();
-				std::cout << "Failed to decommit memory: " << err << std::endl;
-			}
-		}
 		if (!VirtualFreeEx(handle, allocDllPath, 0, MEM_RELEASE)) {
 			DWORD err = GetLastError();
 			std::cout << "Failed to release memory: " << err << std::endl;

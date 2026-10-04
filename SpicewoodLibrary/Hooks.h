@@ -6,7 +6,7 @@
 #include "Engine/Offsets.h"
 #include "Engine/Objects.h"
 
-int H_Inititialize(uintptr_t base);
+int H_Inititialize(uintptr_t targetInstance);
  
 int H_Shutdown();
 void HandleProcessEvent(UObject* object, UFunction* function, void* params);

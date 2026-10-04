@@ -74,7 +74,6 @@ BOOL APIENTRY DllMain(HMODULE hModule,
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH: {
-        UnlinkDllFromPEB(hModule);
         DisableThreadLibraryCalls(hModule);
         HANDLE thread = CreateThread(nullptr, 0, MainThread, hModule, 0, nullptr);
         CloseHandle(thread);
