@@ -16,4 +16,4 @@ class UFunction;
 
 
 using AppendString = void(*)(const void*, FString&);
-using ProcessEventFn = void(*)(UObject* object, UFunction* function, void* params);
+using ProcessEventFn = void(__fastcall *)(UObject* object, UFunction* function, void* params);

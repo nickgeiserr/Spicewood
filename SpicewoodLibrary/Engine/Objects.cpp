@@ -5,6 +5,7 @@
 #include "Core/Console.h"
 #include "Core/Strings.h"
 #include "Engine/Offsets.h"
+#include <fstream>
 
 static uintptr_t moduleBase = 0;
 static uintptr_t objectArray = 0;
@@ -153,12 +154,38 @@ uintptr_t FindObject(const std::string& full_name) {
 	return 0;
 }
 
+uintptr_t GrabObjectAtIndex(int index) {
+	if (!objectArray) {
+		Print(Error, "Failed to grab object table address.");
+		return 0;
+	}
+
+	uintptr_t tocPointer = Read<uintptr_t>(objectArray, 0x00);
+	if (!tocPointer) {
+		Print(Error, "Failed to grab table of contents");
+		return 0;
+	}
+
+	int chunk = index / PAGE_MAX;
+	int cindex = index % PAGE_MAX;
+
+	uintptr_t chunkPtr = Read<uintptr_t>(tocPointer, chunk * 8);
+	if (!chunkPtr) {
+		Print(Warning, std::format("Chunk {} is null, skipping object {}", chunk, cindex));
+	}
+
+	uintptr_t objectPtr = Read<uintptr_t>(chunkPtr, cindex * 24);
+	if (!objectPtr) {
+		Print(PrintType::Error, "Failed to find object ptr.");
+		return 0;
+	}
+
+	return objectPtr;
+}
+
 void PrintAllObjects() {
 
 	Print(Info, "Checking GObjects...");
-	uint32_t correct = 0;
-	uint32_t wrong = 0;
-	uint32_t empty = 0;
 
 	if (!objectArray) {
 		Print(Error, "Failed to grab object table address.");
@@ -171,8 +198,16 @@ void PrintAllObjects() {
 		return;
 	}
 
+	std::ofstream dumpFile("C:\\Solutions\\Spicewood\\gobjects_dump.txt", std::ios::out);
+	if (!dumpFile.is_open()) {
+		Print(Error, "Failed to create dump file path. Check folder permissions!");
+		return;
+	}
+
+	dumpFile << "Full GObjects Dump \n";
+
 	uint32_t numObjects = gObjectsNum();
-	for (int i = 0; i < 25; i++) {
+	for (int i = 0; i < numObjects; i++) {
 		int chunk = i / PAGE_MAX;
 		int index = i % PAGE_MAX;
 
@@ -184,7 +219,6 @@ void PrintAllObjects() {
 
 		uintptr_t objectPtr = Read<uintptr_t>(chunkPtr, index * 24);
 		if (!objectPtr) {
-			empty += 1;
 			continue;
 		}
 
@@ -209,23 +243,21 @@ void PrintAllObjects() {
 		}
 
 
-
 		uintptr_t classNameAddress = classAddress + 0x18;
 		std::string class_name = GetName(classNameAddress);
 
 		full_name = class_name + " " + full_name;
 
-		Print(PrintType::Debug, full_name);
+		// Print(PrintType::Debug, full_name);
 
 		int32_t trueIndex = Read<int32_t>(objectPtr, 0x0c);
-		if (trueIndex == i) {
-			correct += 1;
-		}
-		else {
-			wrong += 1;
-		}
 
+		dumpFile << "[" << i << "] (InternalIdx: " << trueIndex << ") "
+			<< "Address: 0x" << std::hex << objectPtr << " | "
+			<< "ClassPtr: 0x" << classAddress << " | "
+			<< "Full: " << full_name << "\n";
 	}
 
-	Print(wrong == 0 ? Startup : Warning, std::format("{} correct, {} wrong, {} empty slots", correct, wrong, empty));
+	dumpFile.close();
+	Print(PrintType::Info, "Dump complete!");
 }

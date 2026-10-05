@@ -14,7 +14,19 @@ static std::string Timestamp() {
     return std::string(time);
 }
 
+static void LogWithoutServer(const std::string& msg)
+{
+    FILE* file = nullptr;
+    fopen_s(&file, "C:\\Temp\\spicewood_debug.txt", "a");
+
+    if (file) {
+        fprintf(file, "%s\n", msg.c_str());
+        fclose(file);
+    }
+}
+
 void CreateConsole() {
+    LogWithoutServer("Attempting CreateFileA...");
     while (hPipeConnection == INVALID_HANDLE_VALUE) {
         hPipeConnection = CreateFileA(
             "\\\\.\\pipe\\spicewood_pipeline",
@@ -36,6 +48,8 @@ void CreateConsole() {
 }
 
 void CleanupConsole() {
+    Print(PrintType::Warning, ">>> CleanupConsole() CALLED <<<");
+
     if (hPipeConnection != INVALID_HANDLE_VALUE) {
         DWORD bytesWritten;
         std::string signal = "TRIGGER_CLEAN_UNLOAD";

@@ -1,67 +1,123 @@
 #include "pch.h"
 #include "Hooks.h"
 #include <unordered_set>
+#include <mutex>
 #include <string>
-#include <sstream>
+#include <format>
+#include <future>
 
 static ProcessEventFn oProcessEvent = nullptr;
 static std::unordered_set<UFunction*> calledFunctions = {};
-static uintptr_t* allocatedShadowTable = nullptr;
+static std::mutex calledFunctionsMutex;
 
-static int functionCaptureCount = 0;
-constexpr int MaxCaptures = 20;
+int H_CreateHooks(uintptr_t base) {
+	LPVOID* processEvent = (LPVOID*)(base + PROCESS_EVENT);
 
-int H_Inititialize(uintptr_t targetInstance) {
-	if (!targetInstance) {
-		Print(PrintType::Error, "Target object instance is null for shadow hook.");
+	MH_STATUS hookStatus = MH_CreateHook(processEvent, &HandleProcessEvent, reinterpret_cast<LPVOID*>(&oProcessEvent));
+
+
+	if (hookStatus != MH_OK) {
+		Print(PrintType::Error, "Failed to hook ProcessEvent");
 		return 1;
 	}
 
-	uintptr_t** vmtArrayPointer = (uintptr_t**)targetInstance;
-	uintptr_t* originalVMT = *vmtArrayPointer;
+	Print(PrintType::Info, "ProcessEvent Hooked.");
 
-	constexpr int TableSize = 150;
-	constexpr int ProcessEventIdx = 76;
+	return MH_OK;
+}
 
-	allocatedShadowTable = new uintptr_t[TableSize];
-	memcpy(allocatedShadowTable, originalVMT, TableSize * sizeof(uintptr_t));
-
-	oProcessEvent = (ProcessEventFn)originalVMT[ProcessEventIdx];
-	allocatedShadowTable[ProcessEventIdx] = (uintptr_t)&HandleProcessEvent;
-
-	DWORD oldProtect;
-	if (!VirtualProtect(vmtArrayPointer, sizeof(uintptr_t), PAGE_READWRITE, &oldProtect)) {
-		Print(PrintType::Error, "VirtualProtect failed on table pointer.");
+int H_Inititialize(uintptr_t base) {
+	if (MH_Initialize() != MH_OK) {
+		Print(PrintType::Error, "Failed to initialize MinHook");
 		return 1;
 	}
 
-	*vmtArrayPointer = allocatedShadowTable;
+	H_CreateHooks(base);
 
-	VirtualProtect(vmtArrayPointer, sizeof(uintptr_t), oldProtect, &oldProtect);
+	if (MH_EnableHook(MH_ALL_HOOKS) != MH_OK) {
+		Print(PrintType::Error, "Failed to enable hooks.");
+		return 1;
+	}
+	Print(PrintType::Info, "Hooks Enabled.");
 
-	functionCaptureCount = 0;
-	Print(PrintType::Info, "ProcessEvent Shadow Hook initialized. Capturing first 20 calls...");
-	return 0;
+	static std::future<void> background_task;
+	static std::future<void> nested_background_task;
+
+	background_task = std::async(std::launch::async, [base]() {
+		while (true) {
+			std::this_thread::sleep_for(std::chrono::seconds(9));
+
+			MH_DisableHook(MH_ALL_HOOKS);
+			Print(PrintType::Debug, "Hooks disabled.");
+
+			std::this_thread::sleep_for(std::chrono::seconds(3));
+
+			MH_EnableHook(MH_ALL_HOOKS);
+			Print(PrintType::Debug, "Hooks re-enabled.");
+		}
+		});
+
+	return MH_OK;
 }
 
 void HandleProcessEvent(UObject* object, UFunction* function, void* params) {
-	if (functionCaptureCount < MaxCaptures) {
-		functionCaptureCount++;
-
-		std::stringstream ss;
-		ss << "Intercepted Function Call [" << functionCaptureCount << "/" << MaxCaptures << "] | Function address: 0x" << std::hex << (uintptr_t)function;
-		Print(PrintType::Debug, ss.str());
+	static thread_local bool bIsInsideHook = false;
+	if (bIsInsideHook) {
+		oProcessEvent(object, function, params);
+		return;
 	}
 
+	if (!object || !function) {
+		oProcessEvent(object, function, params);
+		return;
+	}
+
+	bIsInsideHook = true;
+
+	bool alreadyCalled = false;
+	{
+		std::lock_guard<std::mutex> lock(calledFunctionsMutex);
+		if (calledFunctions.contains(function)) {
+			alreadyCalled = true;
+		}
+		else {
+			calledFunctions.insert(function);
+		}
+	}
+
+	if (alreadyCalled) {
+		bIsInsideHook = false;
+		oProcessEvent(object, function, params);
+		return;
+	}
+
+	std::string funcName = GetName((uintptr_t)function + 0x18);
+
+	if (funcName.empty() ||
+		funcName == "None" ||
+		funcName.find("Mouse") != std::string::npos ||
+		funcName.find("Tick") != std::string::npos ||
+		funcName.find("Animation") != std::string::npos ||
+		funcName.find("EvaluateGraph") != std::string::npos ||
+		funcName.find("Receive") != std::string::npos)
+	{
+		bIsInsideHook = false;
+		oProcessEvent(object, function, params);
+		return;
+	}
+
+	Print(PrintType::Debug, "New Function Called: " + funcName);
+	if (funcName == "OnProjectileLaunch") {
+		Print(PrintType::Info, "Projectile shot!");
+	}
+	bIsInsideHook = false;
 	oProcessEvent(object, function, params);
 	return;
 }
 
 int H_Shutdown() {
-	if (allocatedShadowTable != nullptr) {
-		delete[] allocatedShadowTable;
-		allocatedShadowTable = nullptr;
-		Print(PrintType::Info, "Hooks uninitialized.");
-	}
+	Print(PrintType::Warning, ">>> H_Shutdown() CALLED <<<");
+	MH_DisableHook(MH_ALL_HOOKS);
+	MH_Uninitialize();
 	return 1;
 }

@@ -72,7 +72,7 @@ void DrawHeader() {
 }
 
 void CreateConsole() {
-    SetConsoleTitleA("Spicewood External Command Hub");
+    SetConsoleTitleA("Spicewood Server");
     SetConsoleOutputCP(CP_UTF8);
 
     HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -135,63 +135,80 @@ std::string ReadLine(const std::string& prompt) {
 }
 
 int main() {
+    std::cout << "[SERVER] Starting...\n" << std::flush;
     HANDLE hPipe = CreateNamedPipeA(
         "\\\\.\\pipe\\spicewood_pipeline",
         PIPE_ACCESS_DUPLEX,
         PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
-        1, 4096, 4096, 0, NULL
+        1, 65536, 65536, 0, NULL
     );
 
     if (hPipe == INVALID_HANDLE_VALUE) {
         return 1;
     }
 
-    std::cout << "Spicewood Hub Active. Waiting for game connection...\n";
+    bool keepRunning = true;
+    bool systemInitialized = false;
 
-    if (ConnectNamedPipe(hPipe, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED)) {
-        CreateConsole();
-
-        DrawKeybinds({
-            {"F9", "Object count"},
-            {"F8", "Check objects"},
-            {"F7", "FindObject"},
-            {"F6", "FindObjectsByClass"},
-            {"F10", "Unload"}
-            });
+    while (keepRunning) {
+        if (!systemInitialized) {
+            std::cout << "Waiting for game connection...\n";
+            if (ConnectNamedPipe(hPipe, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED)) {
+                CreateConsole();
+                DrawKeybinds({
+                    {"F9", "Object count"},
+                    {"F8", "Check objects"},
+                    {"F7", "FindObject"},
+                    {"F6", "FindObjectsByClass"},
+                    {"F10", "Unload"}
+                    });
+                systemInitialized = true;
+            }
+            else {
+                Sleep(100);
+                continue;
+            }
+        }
 
         char buffer[4096];
         DWORD bytesRead;
-        bool keepRunning = true;
 
-        while (keepRunning) {
-            if (ReadFile(hPipe, buffer, sizeof(buffer) - 1, &bytesRead, NULL)) {
-                if (bytesRead > 0) {
-                    buffer[bytesRead] = '\0';
-                    std::string packet(buffer);
+        if (ReadFile(hPipe, buffer, sizeof(buffer) - 1, &bytesRead, NULL)) {
+            if (bytesRead > 0) {
+                buffer[bytesRead] = '\0';
+                std::string packet(buffer);
 
-                    if (packet.rfind("REQ_INPUT:", 0) == 0) {
-                        std::string prompt = packet.substr(10);
-                        std::string userInput = ReadLine(prompt);
+                if (packet.rfind("REQ_INPUT:", 0) == 0) {
+                    std::string prompt = packet.substr(10);
+                    std::string userInput = ReadLine(prompt);
 
-                        DWORD bytesWritten;
-                        WriteFile(hPipe, userInput.c_str(), (DWORD)userInput.length(), &bytesWritten, NULL);
-                    }
-                    else if (packet == "TRIGGER_CLEAN_UNLOAD") {
-                        keepRunning = false;
-                    }
-                    else {
-                        std::cout << packet << std::flush;
-                    }
+                    DWORD bytesWritten;
+                    WriteFile(hPipe, userInput.c_str(), (DWORD)userInput.length(), &bytesWritten, NULL);
                 }
-            }
-            else {
-                DWORD error = GetLastError();
-                if (error == ERROR_BROKEN_PIPE || error == ERROR_PIPE_NOT_CONNECTED) {
+                else if (packet == "TRIGGER_CLEAN_UNLOAD") {
+                    std::cout << "\n"
+                        << Mocha::Red
+                        << "[DLL] CLEAN UNLOAD RECEIVED"
+                        << Mocha::Base
+                        << "\n"
+                        << std::flush;
+
                     keepRunning = false;
                 }
+                else {
+                    std::cout << packet << std::flush;
+                }
             }
-            Sleep(10);
         }
+        else {
+            DWORD error = GetLastError();
+            if (error == ERROR_BROKEN_PIPE || error == ERROR_PIPE_NOT_CONNECTED) {
+                DisconnectNamedPipe(hPipe);
+                systemInitialized = false;
+                std::cout << "\n" << Mocha::Red << "[Pipe Closed/Broken] Re-listening..." << Mocha::Base << "\n\n";
+            }
+        }
+        Sleep(1);
     }
 
     CloseHandle(hPipe);

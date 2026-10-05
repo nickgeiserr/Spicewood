@@ -6,7 +6,9 @@
 #include "Engine/Offsets.h"
 #include "Engine/Objects.h"
 
-int H_Inititialize(uintptr_t targetInstance);
+static LONG CALLBACK ExceptionHandler(
+    PEXCEPTION_POINTERS info);
+int H_Inititialize(uintptr_t base);
  
 int H_Shutdown();
 void HandleProcessEvent(UObject* object, UFunction* function, void* params);

@@ -65,15 +65,15 @@ void LogAllProcessThreadsToFile() {
 DWORD WINAPI MainThread(LPVOID param) {
 	// UnlinkDllFromPEB((HINSTANCE)param);
 	CreateConsole();
-	DrawKeybinds({ {"F9", "Object count"}, {"F8", "Check objects"}, { "F7", "FindObject" }, { "F6", "FindObjectsByClass" }, { "F10", "Unload" }});
+	DrawKeybinds({ {"F9", "Object count"}, {"F8", "Check objects"}, { "F7", "FindObject" }, { "F10", "Unload" }});
 
 	InitObjects((uintptr_t)GetModuleHandle(NULL));
 	Print(Startup, "Spicewood loaded");
 
-	//int hooksFailed = H_Inititialize(*(uintptr_t*)((uintptr_t)GetModuleHandle(NULL) + 0x0BAC1810));
-	//if (hooksFailed) {
-	// 	Print(PrintType::Warning, "MinHook init failed. Hooks will not work.");
-	// }
+	int hooksFailed = H_Inititialize((uintptr_t)GetModuleHandle(NULL));
+	if (hooksFailed) {
+	 	Print(PrintType::Warning, "MinHook init failed. Hooks will not work.");
+	 }
 
 	LogAllProcessThreadsToFile();
 
@@ -97,23 +97,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 			Print(PrintType::Debug, std::format("{:#x}",FindObject("Class /Script/SpicewoodGAS.ATR_RangedAttack")));
 		}
 
-		if ((GetAsyncKeyState(VK_F6) & 0x8000) != 0) {
-			uintptr_t classPtr = FindObject("Class /Script/Engine.LocalPlayer");
 
-			if (!classPtr) {
-				Print(PrintType::Error, "Failed to find the class pointer.");
-			}
-			else {
-				std::vector<uintptr_t> objects = FindObjectsByClass(classPtr);
-
-				Print(PrintType::Debug, std::to_string(objects.size()));
-
-				for (uintptr_t object : objects) {
-					Print(PrintType::Debug, std::format("{:#x}", object) + " | " + GetName(object + 0x18));
-					H_Inititialize(object);
-				}
-			}
-		}
 
 		Sleep(150);
 	}
