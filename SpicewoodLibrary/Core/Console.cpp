@@ -5,6 +5,15 @@
 #include <sstream>
 
 static HANDLE hPipeConnection = INVALID_HANDLE_VALUE;
+static bool isDebugMode = false;
+
+void SetDebugMode(bool dm) {
+    isDebugMode = dm;
+}
+
+bool IsDebugMode() {
+    return isDebugMode;
+}
 
 static std::string Timestamp() {
     SYSTEMTIME t;
@@ -64,6 +73,9 @@ void DrawKeybinds(std::initializer_list<std::pair<const char*, const char*>> key
 
 void Print(PrintType type, const std::string& message) {
     if (hPipeConnection == INVALID_HANDLE_VALUE) return;
+    if (type == PrintType::Debug) {
+        if (!isDebugMode) return;
+    }
 
     const char* bg = Mocha::BgBlue;
     const char* label = " INFO  ";

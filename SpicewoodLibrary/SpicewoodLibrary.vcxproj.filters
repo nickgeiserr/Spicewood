@@ -19,6 +19,15 @@
     <Filter Include="External\MinHook">
       <UniqueIdentifier>{A3E5D7C9-1B2F-4E6A-8C0D-9F1E2A3B4C03}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Hooks">
+      <UniqueIdentifier>{4df0d205-28fe-4fdc-8223-2d0c967fa444}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application">
+      <UniqueIdentifier>{D77E3D4B-A974-488A-BE6D-7CEAFB1FBC17}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Windows">
+      <UniqueIdentifier>{C596FB6C-A20A-4EDB-A064-E4AB6E54DA2E}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -28,7 +37,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Spicewood.h">
-      <Filter>Header Files</Filter>
+      <Filter>Application</Filter>
     </ClInclude>
     <ClInclude Include="Core\Console.h">
       <Filter>Core</Filter>
@@ -51,18 +60,25 @@
     <ClInclude Include="external\minhook\include\MinHook.h">
       <Filter>External\MinHook</Filter>
     </ClInclude>
-    <ClInclude Include="Aegis.h" />
-    <ClInclude Include="Hooks.h" />
+    <ClInclude Include="Aegis.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Hooks.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessEvent.h">
+      <Filter>Hooks</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Application</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Spicewood.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Application</Filter>
     </ClCompile>
     <ClCompile Include="Core\Console.cpp">
       <Filter>Core</Filter>
@@ -88,7 +104,14 @@
     <ClCompile Include="external\minhook\src\hde\hde64.c">
       <Filter>External\MinHook</Filter>
     </ClCompile>
-    <ClCompile Include="Aegis.cpp" />
-    <ClCompile Include="Hooks.cpp" />
+    <ClCompile Include="Aegis.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Hooks.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessEvent.cpp">
+      <Filter>Hooks</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

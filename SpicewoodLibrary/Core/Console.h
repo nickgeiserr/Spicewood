@@ -44,6 +44,9 @@ enum PrintType {
 	Warning
 };
 
+void SetDebugMode(bool dm);
+bool IsDebugMode();
+
 void CreateConsole();
 void CleanupConsole();
 

@@ -131,7 +131,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
         Print(PrintType::Debug, "Thread detached");
         break;
     case DLL_PROCESS_DETACH:
-        H_Shutdown();
+        Hooks::Shutdown();
         CleanupConsole();
         break;
     }

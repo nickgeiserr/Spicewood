@@ -5,10 +5,22 @@
 #include "Engine/Unreal.h"
 #include "Engine/Offsets.h"
 #include "Engine/Objects.h"
+#include "ProcessEvent.h"
 
-static LONG CALLBACK ExceptionHandler(
-    PEXCEPTION_POINTERS info);
-int H_Inititialize(uintptr_t base);
- 
-int H_Shutdown();
-void HandleProcessEvent(UObject* object, UFunction* function, void* params);
+#include <cstdint>
+#include <functional>
+
+class UObject;
+class UFunction;
+
+using ProcessEventFn = void(__fastcall*)(UObject* object, UFunction* function, void* params);
+
+namespace Hooks {
+    bool Initialize(uintptr_t baseAddress);
+    void Shutdown();
+
+    void CallProcessEvent(UObject* object, UFunction* function, void* params);
+    void QueueGameThreadTask(std::function<void()> task);
+
+    bool IsHooked();
+}

@@ -6,6 +6,7 @@
 #include "Core/Strings.h"
 #include "Engine/Offsets.h"
 #include <fstream>
+#include "../Hooks.h"
 
 static uintptr_t moduleBase = 0;
 static uintptr_t objectArray = 0;
@@ -78,7 +79,7 @@ std::vector<uintptr_t> FindObjectsByClass(uintptr_t classPtr) {
 
 }
 
-uintptr_t FindObject(const std::string& full_name) {
+uintptr_t FindObject(const std::string& full_name, bool considerDefaults, bool skipTypeClass) {
 	if (!objectArray) {
 		Print(Error, "Failed to grab object table address.");
 		return 0;
@@ -108,7 +109,6 @@ uintptr_t FindObject(const std::string& full_name) {
 
 		uintptr_t chunkPtr = Read<uintptr_t>(tocPointer, chunk * 8);
 		if (!chunkPtr) {
-			Print(Warning, std::format("Chunk {} is null, skipping object {}", chunk, i));
 			continue;
 		}
 
@@ -117,10 +117,25 @@ uintptr_t FindObject(const std::string& full_name) {
 			continue;
 		}
 
+		if (!considerDefaults) {
+			uint32_t flags = Read<uint32_t>(objectPtr, 0x08);
+			if ((flags & 0x10) != 0) continue;
+		}
+
 		uintptr_t initialNameAddress = objectPtr + 0x18;
 		uintptr_t classAddress = Read<uintptr_t>(objectPtr, 0x10);
 
 		std::string constructedFullName = GetName(initialNameAddress);
+
+		if (!considerDefaults && constructedFullName.rfind("Default__", 0) == 0) {
+			continue;
+		}
+
+		if (!considerDefaults && full_name.find('/') == std::string::npos) {
+			if (constructedFullName.find(full_name) != std::string::npos) {
+				return objectPtr;
+			}
+		}
 
 		if (constructedFullName != short_name) {
 			continue;
@@ -142,7 +157,9 @@ uintptr_t FindObject(const std::string& full_name) {
 		}
 
 		uintptr_t classNameAddress = classAddress + 0x18;
-		std::string class_name = GetName(classNameAddress);
+		std::string class_name = GetName(classNameAddress).c_str();
+		if (skipTypeClass && class_name == "Class") 
+			continue;
 
 		constructedFullName = class_name + " " + constructedFullName;
 

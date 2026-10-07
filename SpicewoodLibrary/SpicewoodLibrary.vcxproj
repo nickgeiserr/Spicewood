@@ -166,6 +166,7 @@
     <ClInclude Include="Hooks.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="ProcessEvent.h" />
     <ClInclude Include="Spicewood.h" />
     <ClInclude Include="Core\Console.h" />
     <ClInclude Include="Core\Memory.h" />
@@ -188,6 +189,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="ProcessEvent.cpp" />
     <ClCompile Include="Spicewood.cpp" />
     <ClCompile Include="external\minhook\src\buffer.c">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>

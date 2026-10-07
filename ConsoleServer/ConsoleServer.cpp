@@ -193,7 +193,7 @@ int main() {
                         << "\n"
                         << std::flush;
 
-                    keepRunning = false;
+                    keepRunning = true;
                 }
                 else {
                     std::cout << packet << std::flush;

@@ -4,83 +4,22 @@
 #include "Core/Console.h"
 #include "Engine/Objects.h"
 #include "Hooks.h"
-#include <TlHelp32.h>
-#include <fstream>
-#include <Aegis.h>
 
-void LogAllProcessThreadsToFile() {
-	DWORD currentPID = GetCurrentProcessId();
-
-	std::ofstream logFile("C:\\Users\\Public\\thread_log.txt", std::ios::out | std::ios::app);
-	if (!logFile.is_open()) {
-		return;
-	}
-
-	HANDLE hThreadSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-	if (hThreadSnapshot == INVALID_HANDLE_VALUE) {
-		logFile << "[!] Failed to create thread snapshot.\n";
-		logFile.close();
-		return;
-	}
-
-	THREADENTRY32 te32;
-	te32.dwSize = sizeof(THREADENTRY32);
-
-	logFile << "=== Enumerating Active Process Threads ===\n";
-
-	if (Thread32First(hThreadSnapshot, &te32)) {
-		do {
-			if (te32.th32OwnerProcessID == currentPID) {
-				std::string logLine = "Thread ID: " + std::to_string(te32.th32ThreadID);
-
-				HANDLE hThread = OpenThread(THREAD_QUERY_LIMITED_INFORMATION, FALSE, te32.th32ThreadID);
-				if (hThread != NULL) {
-					PWSTR threadDescription = nullptr;
-					HRESULT hr = GetThreadDescription(hThread, &threadDescription);
-					if (SUCCEEDED(hr) && threadDescription != nullptr && *threadDescription != L'\0') {
-						std::wstring wDescription(threadDescription);
-						std::string sDescription(wDescription.begin(), wDescription.end());
-						logLine += " | Name: [" + sDescription + "]";
-						LocalFree(threadDescription);
-					}
-					else {
-						logLine += " | Name: [Unnamed Thread / Pool Worker]";
-					}
-					CloseHandle(hThread);
-				}
-				else {
-					logLine += " | Name: [Access Denied - Security Lock]";
-				}
-
-				logFile << logLine << "\n";
-			}
-		} while (Thread32Next(hThreadSnapshot, &te32));
-	}
-
-	logFile << "==========================================\n\n";
-	logFile.close();
-	CloseHandle(hThreadSnapshot);
-}
 
 DWORD WINAPI MainThread(LPVOID param) {
-	// UnlinkDllFromPEB((HINSTANCE)param);
 	CreateConsole();
-	DrawKeybinds({ {"F9", "Object count"}, {"F8", "Check objects"}, { "F7", "FindObject" }, { "F10", "Unload" }});
+	DrawKeybinds({ {"F9", "Object count"}, {"F8", "Check objects"}, {"F7", "FindObject"}, {"F6", "Equip Item"}, {"F10", "Unload"} });
+	SetDebugMode(true);
 
-	InitObjects((uintptr_t)GetModuleHandle(NULL));
+	uintptr_t moduleBase = reinterpret_cast<uintptr_t>(GetModuleHandle(NULL));
+	InitObjects(moduleBase);
+	Hooks::Initialize(moduleBase);
 	Print(Startup, "Spicewood loaded");
-
-	int hooksFailed = H_Inititialize((uintptr_t)GetModuleHandle(NULL));
-	if (hooksFailed) {
-	 	Print(PrintType::Warning, "MinHook init failed. Hooks will not work.");
-	 }
-
-	LogAllProcessThreadsToFile();
 
 	while (true) {
 		if ((GetAsyncKeyState(VK_F10) & 0x8000) != 0) {
 			Print(Info, "Unloading Spicewood");
-			H_Shutdown();
+			Hooks::Shutdown();
 			CleanupConsole();
 			FreeLibraryAndExitThread((HMODULE)param, 0);
 		}
@@ -94,9 +33,34 @@ DWORD WINAPI MainThread(LPVOID param) {
 		}
 
 		if ((GetAsyncKeyState(VK_F7) & 0x8000) != 0) {
-			Print(PrintType::Debug, std::format("{:#x}",FindObject("Class /Script/SpicewoodGAS.ATR_RangedAttack")));
+			Print(PrintType::Debug, std::format("{:#x}", FindObject("Class /Script/SpicewoodGAS.ATR_RangedAttack", false)));
 		}
 
+		if ((GetAsyncKeyState(VK_F6) & 0x8000) != 0) {
+			struct FSWSessionUID {
+				uint64_t UID;
+			};
+
+			struct UInventoryManagerComponent_EquipItemInAppropriateSlot_Params {
+				FSWSessionUID UID;
+				bool ReturnValue;
+			};
+
+			uintptr_t object = GrabObjectAtIndex(103060);
+			uintptr_t function = FindObject("Function /Script/InventorySystem.InventoryManagerComponent.EquipItemInAppropriateSlot", false, true);
+			if (!function || !object) {
+				Print(PrintType::Debug, "Failed to resolve object or function pointer");
+			}
+
+			UInventoryManagerComponent_EquipItemInAppropriateSlot_Params params{ {7316}, false };
+			Hooks::CallProcessEvent(
+				reinterpret_cast<UObject*>(object),
+				reinterpret_cast<UFunction*>(function),
+				&params
+			);
+
+			Print(PrintType::Debug, "Called process event");
+		}
 
 
 		Sleep(150);

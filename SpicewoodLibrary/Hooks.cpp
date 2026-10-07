@@ -1,123 +1,119 @@
 #include "pch.h"
 #include "Hooks.h"
-#include <unordered_set>
+#include "Core/Console.h"
 #include <mutex>
-#include <string>
-#include <format>
-#include <future>
+#include <vector>
 
-static ProcessEventFn oProcessEvent = nullptr;
-static std::unordered_set<UFunction*> calledFunctions = {};
-static std::mutex calledFunctionsMutex;
+namespace Hooks {
+    static ProcessEventFn g_ProcessEventRaw = nullptr;
+    static ProcessEventFn g_OriginalFuncProcessEvent = nullptr;
 
-int H_CreateHooks(uintptr_t base) {
-	LPVOID* processEvent = (LPVOID*)(base + PROCESS_EVENT);
+    static void** g_OriginalFuncVTable = nullptr;
+    static void** g_ReplacedFuncVTable = nullptr;
+    static void* g_HookedFuncInstance = nullptr;
 
-	MH_STATUS hookStatus = MH_CreateHook(processEvent, &HandleProcessEvent, reinterpret_cast<LPVOID*>(&oProcessEvent));
+    static std::mutex g_TaskMutex;
+    static std::vector<std::function<void()>> g_TaskQueue;
+    static bool g_IsHooked = false;
 
+    static void __fastcall hkFunctionProcessEvent(UObject* object, UFunction* function, void* params) {
+        std::vector<std::function<void()>> localTasks;
+        {
+            std::lock_guard<std::mutex> lock(g_TaskMutex);
+            if (!g_TaskQueue.empty()) {
+                localTasks.swap(g_TaskQueue);
+            }
+        }
 
-	if (hookStatus != MH_OK) {
-		Print(PrintType::Error, "Failed to hook ProcessEvent");
-		return 1;
-	}
+        for (auto& task : localTasks) {
+            if (task) {
+                task();
+            }
+        }
 
-	Print(PrintType::Info, "ProcessEvent Hooked.");
+        if (g_OriginalFuncProcessEvent) {
+            g_OriginalFuncProcessEvent(object, function, params);
+        }
+    }
 
-	return MH_OK;
-}
+    bool Initialize(uintptr_t baseAddress) {
+        uintptr_t peAddress = baseAddress + PROCESS_EVENT;
+        g_ProcessEventRaw = reinterpret_cast<ProcessEventFn>(peAddress);
 
-int H_Inititialize(uintptr_t base) {
-	if (MH_Initialize() != MH_OK) {
-		Print(PrintType::Error, "Failed to initialize MinHook");
-		return 1;
-	}
+        if (!g_ProcessEventRaw) {
+            Print(PrintType::Error, "Failed to resolve raw ProcessEvent address.");
+            return false;
+        }
 
-	H_CreateHooks(base);
+        uintptr_t targetFunction = FindObject("Function /Script/Engine.HUD.ReceiveDrawHUD", false, true);
+        if (!targetFunction) {
+            targetFunction = FindObject("Function /Script/Engine.Actor.ReceiveTick", false, true);
+        }
 
-	if (MH_EnableHook(MH_ALL_HOOKS) != MH_OK) {
-		Print(PrintType::Error, "Failed to enable hooks.");
-		return 1;
-	}
-	Print(PrintType::Info, "Hooks Enabled.");
+        if (!targetFunction) {
+            Print(PrintType::Error, "Failed to resolve a safe UFunction target for VMT migration.");
+            return false;
+        }
 
-	static std::future<void> background_task;
-	static std::future<void> nested_background_task;
+        g_HookedFuncInstance = reinterpret_cast<void*>(targetFunction);
 
-	background_task = std::async(std::launch::async, [base]() {
-		while (true) {
-			std::this_thread::sleep_for(std::chrono::seconds(9));
+        g_OriginalFuncVTable = *reinterpret_cast<void***>(g_HookedFuncInstance);
 
-			MH_DisableHook(MH_ALL_HOOKS);
-			Print(PrintType::Debug, "Hooks disabled.");
+        size_t vtableSize = 0;
+        while (g_OriginalFuncVTable[vtableSize] != nullptr && vtableSize < 150) {
+            vtableSize++;
+        }
 
-			std::this_thread::sleep_for(std::chrono::seconds(3));
+        g_ReplacedFuncVTable = new void* [vtableSize];
+        memcpy(g_ReplacedFuncVTable, g_OriginalFuncVTable, vtableSize * sizeof(void*));
 
-			MH_EnableHook(MH_ALL_HOOKS);
-			Print(PrintType::Debug, "Hooks re-enabled.");
-		}
-		});
+        size_t processEventVmtIndex = 76;
+        g_OriginalFuncProcessEvent = reinterpret_cast<ProcessEventFn>(g_OriginalFuncVTable[processEventVmtIndex]);
+        g_ReplacedFuncVTable[processEventVmtIndex] = reinterpret_cast<void*>(&hkFunctionProcessEvent);
 
-	return MH_OK;
-}
+        *reinterpret_cast<void***>(g_HookedFuncInstance) = g_ReplacedFuncVTable;
 
-void HandleProcessEvent(UObject* object, UFunction* function, void* params) {
-	static thread_local bool bIsInsideHook = false;
-	if (bIsInsideHook) {
-		oProcessEvent(object, function, params);
-		return;
-	}
+        g_IsHooked = true;
+        Print(PrintType::Debug, "Target UFunction VMT redirected. Inline integrity preserved.");
+        return true;
+    }
 
-	if (!object || !function) {
-		oProcessEvent(object, function, params);
-		return;
-	}
+    void QueueGameThreadTask(std::function<void()> task) {
+        std::lock_guard<std::mutex> lock(g_TaskMutex);
+        g_TaskQueue.push_back(std::move(task));
+    }
 
-	bIsInsideHook = true;
+    void CallProcessEvent(UObject* object, UFunction* function, void* params) {
+        if (g_ProcessEventRaw && object && function) {
+            g_ProcessEventRaw(object, function, params);
+        }
+    }
 
-	bool alreadyCalled = false;
-	{
-		std::lock_guard<std::mutex> lock(calledFunctionsMutex);
-		if (calledFunctions.contains(function)) {
-			alreadyCalled = true;
-		}
-		else {
-			calledFunctions.insert(function);
-		}
-	}
+    bool IsHooked() {
+        return g_IsHooked;
+    }
 
-	if (alreadyCalled) {
-		bIsInsideHook = false;
-		oProcessEvent(object, function, params);
-		return;
-	}
+    void Shutdown() {
+        {
+            std::lock_guard<std::mutex> lock(g_TaskMutex);
+            g_TaskQueue.clear();
+        }
 
-	std::string funcName = GetName((uintptr_t)function + 0x18);
+        if (g_HookedFuncInstance && g_OriginalFuncVTable) {
+            *reinterpret_cast<void***>(g_HookedFuncInstance) = g_OriginalFuncVTable;
+        }
 
-	if (funcName.empty() ||
-		funcName == "None" ||
-		funcName.find("Mouse") != std::string::npos ||
-		funcName.find("Tick") != std::string::npos ||
-		funcName.find("Animation") != std::string::npos ||
-		funcName.find("EvaluateGraph") != std::string::npos ||
-		funcName.find("Receive") != std::string::npos)
-	{
-		bIsInsideHook = false;
-		oProcessEvent(object, function, params);
-		return;
-	}
+        if (g_ReplacedFuncVTable) {
+            delete[] g_ReplacedFuncVTable;
+            g_ReplacedFuncVTable = nullptr;
+        }
 
-	Print(PrintType::Debug, "New Function Called: " + funcName);
-	if (funcName == "OnProjectileLaunch") {
-		Print(PrintType::Info, "Projectile shot!");
-	}
-	bIsInsideHook = false;
-	oProcessEvent(object, function, params);
-	return;
-}
+        g_HookedFuncInstance = nullptr;
+        g_OriginalFuncVTable = nullptr;
+        g_OriginalFuncProcessEvent = nullptr;
+        g_ProcessEventRaw = nullptr;
+        g_IsHooked = false;
 
-int H_Shutdown() {
-	Print(PrintType::Warning, ">>> H_Shutdown() CALLED <<<");
-	MH_DisableHook(MH_ALL_HOOKS);
-	MH_Uninitialize();
-	return 1;
+        Print(PrintType::Info, "Hooks cleanly uninitialized.");
+    }
 }
