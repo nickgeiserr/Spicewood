@@ -57,7 +57,7 @@ void DrawHeader() {
     int width = ConsoleWidth() - 4;
 
     std::string title = "  SPICEWOOD  ";
-    std::string subtitle = "  Minecraft Dungeons II Mod Framework";
+    std::string subtitle = "  General";
     std::string version = std::string(VERSION) + "  ";
 
     int gap = width - (int)(title.size() + subtitle.size() + version.size());
@@ -156,10 +156,6 @@ int main() {
             if (ConnectNamedPipe(hPipe, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED)) {
                 CreateConsole();
                 DrawKeybinds({
-                    {"F9", "Object count"},
-                    {"F8", "Check objects"},
-                    {"F7", "FindObject"},
-                    {"F6", "FindObjectsByClass"},
                     {"F10", "Unload"}
                     });
                 systemInitialized = true;

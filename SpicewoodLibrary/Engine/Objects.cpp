@@ -6,7 +6,7 @@
 #include "Core/Strings.h"
 #include "Engine/Offsets.h"
 #include <fstream>
-#include "../Hooks.h"
+#include "../Core/Hooks.h"
 
 static uintptr_t moduleBase = 0;
 static uintptr_t objectArray = 0;
@@ -14,7 +14,7 @@ static AppendString appendString = nullptr;
 
 void InitObjects(uintptr_t base) {
 	moduleBase = base;
-	objectArray = base + TOBJECT_ARRAY;
+	objectArray = base + GObjects;
 	appendString = (AppendString)(base + APPEND_STRING);
 }
 
@@ -200,6 +200,23 @@ uintptr_t GrabObjectAtIndex(int index) {
 	return objectPtr;
 }
 
+uintptr_t TryGrabObjectAtIndex(int index) {
+	if (!objectArray || index < 0 || index >= gObjectsNum())
+		return 0;
+
+	uintptr_t tocPointer = Read<uintptr_t>(objectArray, 0x00);
+	if (!tocPointer)
+		return 0;
+
+	int chunk = index / PAGE_MAX;
+	int chunkIndex = index % PAGE_MAX;
+	uintptr_t chunkPtr = Read<uintptr_t>(tocPointer, chunk * 8);
+	if (!chunkPtr)
+		return 0;
+
+	return Read<uintptr_t>(chunkPtr, chunkIndex * 24);
+}
+
 void PrintAllObjects() {
 
 	Print(Info, "Checking GObjects...");
@@ -224,7 +241,7 @@ void PrintAllObjects() {
 	dumpFile << "Full GObjects Dump \n";
 
 	uint32_t numObjects = gObjectsNum();
-	for (int i = 0; i < numObjects; i++) {
+	for (uint32_t i = 0; i < numObjects; i++) {
 		int chunk = i / PAGE_MAX;
 		int index = i % PAGE_MAX;
 

@@ -1,0 +1,6 @@
+{
+    "id": "example.mod",
+    "name": "Example Mod",
+    "author": "nickdevv",
+    "modfile": "example.lua"
+}

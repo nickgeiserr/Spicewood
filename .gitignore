@@ -15,6 +15,7 @@ Debug/
 Release/
 [Bb]in/
 [Oo]bj/
+SpicewoodLibrary/external/
 
 *.exe
 *.dll

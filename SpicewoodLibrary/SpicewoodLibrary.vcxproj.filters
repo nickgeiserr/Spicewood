@@ -10,6 +10,9 @@
     <Filter Include="Core">
       <UniqueIdentifier>{2B6E9C1D-7A44-4F0E-9C21-5D3A8E7F1B01}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Aegis">
+      <UniqueIdentifier>{B9DDB39E-31E3-4A84-AF97-41983BC55E02}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Engine">
       <UniqueIdentifier>{6C1F4E2A-93B7-4D58-8A0E-1F7B2C9D4E02}</UniqueIdentifier>
     </Filter>
@@ -19,14 +22,23 @@
     <Filter Include="External\MinHook">
       <UniqueIdentifier>{A3E5D7C9-1B2F-4E6A-8C0D-9F1E2A3B4C03}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Hooks">
-      <UniqueIdentifier>{4df0d205-28fe-4fdc-8223-2d0c967fa444}</UniqueIdentifier>
+    <Filter Include="External\Lua">
+      <UniqueIdentifier>{C9A5A8E1-68F4-4B3D-9F6B-90C413D29511}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External\sol2">
+      <UniqueIdentifier>{F10A7062-7D8B-4C16-8B13-0D229B8C4523}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External\nlohmann">
+      <UniqueIdentifier>{2D31AF83-4283-4654-93B8-EA535C12F3CE}</UniqueIdentifier>
     </Filter>
     <Filter Include="Application">
       <UniqueIdentifier>{D77E3D4B-A974-488A-BE6D-7CEAFB1FBC17}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Windows">
-      <UniqueIdentifier>{C596FB6C-A20A-4EDB-A064-E4AB6E54DA2E}</UniqueIdentifier>
+    <Filter Include="Scripting">
+      <UniqueIdentifier>{0C29F657-6607-4754-B18B-604A4BA7B4DE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ModLoader">
+      <UniqueIdentifier>{B7E2604D-3D32-4165-9D7A-B4D4606397CA}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -40,6 +52,9 @@
       <Filter>Application</Filter>
     </ClInclude>
     <ClInclude Include="Core\Console.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Hooks.h">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\Memory.h">
@@ -60,14 +75,29 @@
     <ClInclude Include="external\minhook\include\MinHook.h">
       <Filter>External\MinHook</Filter>
     </ClInclude>
-    <ClInclude Include="Aegis.h">
-      <Filter>Windows</Filter>
+    <ClInclude Include="external\lua\src\lua.h">
+      <Filter>External\Lua</Filter>
     </ClInclude>
-    <ClInclude Include="Hooks.h">
-      <Filter>Core</Filter>
+    <ClInclude Include="external\lua\src\lauxlib.h">
+      <Filter>External\Lua</Filter>
     </ClInclude>
-    <ClInclude Include="ProcessEvent.h">
-      <Filter>Hooks</Filter>
+    <ClInclude Include="external\lua\src\lualib.h">
+      <Filter>External\Lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\sol2\include\sol\sol.hpp">
+      <Filter>External\sol2</Filter>
+    </ClInclude>
+    <ClInclude Include="external\nlohmann\json.hpp">
+      <Filter>External\nlohmann</Filter>
+    </ClInclude>
+    <ClInclude Include="Aegis\Aegis.h">
+      <Filter>Aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripting\Scripting.h">
+      <Filter>Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="ModLoader\ModLoader.h">
+      <Filter>ModLoader</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -89,6 +119,18 @@
     <ClCompile Include="Engine\Objects.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Hooks.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Aegis\Aegis.cpp">
+      <Filter>Aegis</Filter>
+    </ClCompile>
+    <ClCompile Include="Scripting\Scripting.cpp">
+      <Filter>Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="ModLoader\ModLoader.cpp">
+      <Filter>ModLoader</Filter>
+    </ClCompile>
     <ClCompile Include="external\minhook\src\buffer.c">
       <Filter>External\MinHook</Filter>
     </ClCompile>
@@ -104,14 +146,36 @@
     <ClCompile Include="external\minhook\src\hde\hde64.c">
       <Filter>External\MinHook</Filter>
     </ClCompile>
-    <ClCompile Include="Aegis.cpp">
-      <Filter>Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Hooks.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="ProcessEvent.cpp">
-      <Filter>Hooks</Filter>
-    </ClCompile>
+    <ClCompile Include="external\lua\src\lapi.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lauxlib.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lbaselib.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lcode.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lcorolib.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lctype.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\ldebug.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\ldo.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\ldump.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lfunc.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\ldblib.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lgc.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\llex.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lmathlib.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\liolib.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lmem.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lobject.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lopcodes.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lparser.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lstate.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lstring.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lstrlib.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\ltable.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\ltablib.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\loadlib.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\loslib.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\ltm.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lundump.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lutf8lib.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lvm.c"><Filter>External\Lua</Filter></ClCompile>
+    <ClCompile Include="external\lua\src\lzio.c"><Filter>External\Lua</Filter></ClCompile>
   </ItemGroup>
 </Project>

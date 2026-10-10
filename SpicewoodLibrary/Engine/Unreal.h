@@ -13,6 +13,7 @@ static_assert(sizeof(FString) == 0x10);
 // forward dec
 class UObject;
 class UFunction;
+class UClass;
 
 
 using AppendString = void(*)(const void*, FString&);

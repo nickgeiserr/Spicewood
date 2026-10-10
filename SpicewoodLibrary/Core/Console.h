@@ -37,17 +37,26 @@ namespace Mocha {
 }
 
 enum PrintType {
+	// Used once at startup for a special message
 	Startup,
+	// Used to print normal mod information / output
 	Info,
+	// Used specifically for debugging purposes. Will be hidden if DebugMode = false
 	Debug,
+	// Used for printing errors
 	Error,
+	// Used for printing a warning. Ex. x didn't load properly so y might not work but some parts might
 	Warning
 };
 
+// Set & Get Console Debug Mode
 void SetDebugMode(bool dm);
 bool IsDebugMode();
 
+// Create Console Pipeline
 void CreateConsole();
+
+// Cleanup Console
 void CleanupConsole();
 
 void DrawHeader();
